@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
+import statsmodels.api as sm
+import scipy.stats as stats
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 import talib
 # note that talib requires that the time series index to be in increasing order
@@ -109,6 +112,25 @@ class SeriesExplorer(object):
 
         return _corr_list
 
+    def target_dist(self,bins=10,dist=stats.norm):
+        # plot the distribution histogram of the target variable
+        _ = self.target.hist(bins=bins)
+        plt.show()
+
+        # plot the qq plot
+        _ = sm.qqplot(self.target,dist,fit=True,line='45')#,stats.beta
+        plt.show()
+
+    def correlation_matrix(self):
+        # plot the heatmap of correlations between independent variables
+        _l = [c for c in self.indep.keys()]
+        _l.sort()
+        _corr = self.data[_l].corr()
+        g = sns.heatmap(_corr, xticklabels=_corr.columns, yticklabels=_corr.columns)
+        g.set_xticklabels(g.get_xticklabels(), rotation=90)
+        g.set_yticklabels(g.get_yticklabels(), rotation=0)
+        plt.show()
+
 
 def shift_series(se,diff):
     # shift a time series diff days towards future direction
@@ -120,7 +142,7 @@ def shift_series(se,diff):
 if __name__=='__main__':
     # read sugar future SR701 data and generate return series
     df = pd.read_csv('../data/SR701.csv',index_col='date',parse_dates=['date'])
-    hold_day = 20
+    hold_day = 10
     # note that SR701 data is reverse chronically ordered
     df['rtn'] = np.log(df['close'].shift(hold_day + 1) / df['close'].shift(1))
     rtn_series = df['rtn'].dropna()
@@ -148,5 +170,9 @@ if __name__=='__main__':
     #print(series_exp.indep[se.name])
     #print(series_exp.data.head())
 
-    for ta_name in ta_name_list:
-        series_exp.best_shift_test(key=ta_name,method='spearman',plot=True)
+    #for ta_name in ta_name_list:
+    #    series_exp.best_shift_test(key=ta_name,method='spearman',plot=True)
+
+    series_exp.target_dist(bins=15)
+
+    #series_exp.correlation_matrix()
